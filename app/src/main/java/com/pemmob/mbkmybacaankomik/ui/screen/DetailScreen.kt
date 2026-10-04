@@ -105,8 +105,9 @@ fun DetailScreen(
 
                     // 4. Tombol Baca
                     item {
+                        val firstChapterSlug = state.chapters.firstOrNull()?.slug ?: "bab-1"
                         Button(
-                            onClick  = { navController.navigate("read") },
+                            onClick  = { navController.navigate("read/${state.komik.slug}/$firstChapterSlug") },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)
@@ -137,7 +138,7 @@ fun DetailScreen(
                     items(state.chapters) { chapter ->
                         ChapterItem(
                             chapter  = chapter,
-                            onClick  = { navController.navigate("read") },
+                            onClick  = { navController.navigate("read/${state.komik.slug}/${chapter.slug}") },
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         Divider(

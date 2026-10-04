@@ -62,7 +62,51 @@ class MainActivity : ComponentActivity() {
                             DetailScreen(navController = navController)
                         }
 
-                        // ─── Read Screen ───────────────────────────────────
+                        // ─── Read Screen (dengan parameter komikSlug & chapterSlug) ─────────
+                        composable(
+                            route     = "read/{komikSlug}/{chapterSlug}",
+                            arguments = listOf(
+                                navArgument("komikSlug") {
+                                    type         = NavType.StringType
+                                    defaultValue = "legenda-garuda-putih"
+                                },
+                                navArgument("chapterSlug") {
+                                    type         = NavType.StringType
+                                    defaultValue = "bab-1"
+                                }
+                            )
+                        ) { backStackEntry ->
+                            val komikSlug = backStackEntry.arguments?.getString("komikSlug")
+                                ?: "legenda-garuda-putih"
+                            val chapterSlug = backStackEntry.arguments?.getString("chapterSlug")
+                                ?: "bab-1"
+                            ReadScreen(
+                                navController = navController,
+                                komikSlug     = komikSlug,
+                                chapterSlug   = chapterSlug
+                            )
+                        }
+
+                        // ─── Read Screen (dengan parameter komikSlug saja) ─
+                        composable(
+                            route     = "read/{komikSlug}",
+                            arguments = listOf(
+                                navArgument("komikSlug") {
+                                    type         = NavType.StringType
+                                    defaultValue = "legenda-garuda-putih"
+                                }
+                            )
+                        ) { backStackEntry ->
+                            val komikSlug = backStackEntry.arguments?.getString("komikSlug")
+                                ?: "legenda-garuda-putih"
+                            ReadScreen(
+                                navController = navController,
+                                komikSlug     = komikSlug,
+                                chapterSlug   = "bab-1"
+                            )
+                        }
+
+                        // ─── Fallback route read tanpa slug ────────────────
                         composable(route = "read") {
                             ReadScreen(navController = navController)
                         }

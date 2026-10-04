@@ -45,3 +45,18 @@ data class KategoriItem(
     val iconRes: Int? = null,
     val slug: String
 )
+
+/**
+ * Model untuk detail halaman baca chapter komik.
+ * Mendukung navigasi antar-chapter dan siap untuk integrasi REST API.
+ */
+data class ChapterDetail(
+    val komikSlug: String = "",
+    val komikTitle: String = "",
+    val chapterSlug: String = "",
+    val chapterTitle: String = "",
+    val chapterNumber: String = "",
+    val pages: List<String> = emptyList(),
+    val prevChapterSlug: String? = null,
+    val nextChapterSlug: String? = null
+)

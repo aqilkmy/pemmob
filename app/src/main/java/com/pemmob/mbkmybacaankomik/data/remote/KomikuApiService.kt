@@ -52,6 +52,11 @@ interface KomikuApiService {
     suspend fun getDetailKomik(
         @Path("slug") slug: String
     ): KomikuDetailResponse
+
+    @GET("chapter/{chapterSlug}/")
+    suspend fun getChapterPages(
+        @Path("chapterSlug") chapterSlug: String
+    ): KomikuChapterResponse
 }
 
 object RetrofitInstance {

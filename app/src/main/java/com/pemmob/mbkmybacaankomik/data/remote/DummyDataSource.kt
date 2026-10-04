@@ -1,6 +1,7 @@
 package com.pemmob.mbkmybacaankomik.data.remote
 
 import com.pemmob.mbkmybacaankomik.data.model.Chapter
+import com.pemmob.mbkmybacaankomik.data.model.ChapterDetail
 import com.pemmob.mbkmybacaankomik.data.model.Komik
 
 /**
@@ -164,4 +165,40 @@ object DummyDataSource {
             slug = "bab-5"
         )
     )
+
+    /**
+     * Mendapatkan data halaman baca untuk chapter tertentu.
+     * Mengembalikan ChapterDetail lengkap dengan tombol prev/next slug.
+     * Ketika REST API siap, fungsi ini akan digantikan oleh pemanggilan repository/API.
+     */
+    fun getChapterDetail(komikSlug: String, chapterSlug: String): ChapterDetail {
+        val komik = dummyKomikList.find { it.slug == komikSlug } ?: dummyKomikList[0]
+        val chapters = dummyChapterList
+        val currentIndex = chapters.indexOfFirst { it.slug == chapterSlug }.let { if (it == -1) 0 else it }
+        val currentChapter = chapters[currentIndex]
+
+        val prevSlug = if (currentIndex > 0) chapters[currentIndex - 1].slug else null
+        val nextSlug = if (currentIndex < chapters.size - 1) chapters[currentIndex + 1].slug else null
+
+        // Sample manga/manhwa page images untuk visualisasi pembaca
+        val samplePages = listOf(
+            "https://picsum.photos/seed/${komik.slug}-${currentChapter.slug}-p1/800/1200",
+            "https://picsum.photos/seed/${komik.slug}-${currentChapter.slug}-p2/800/1200",
+            "https://picsum.photos/seed/${komik.slug}-${currentChapter.slug}-p3/800/1200",
+            "https://picsum.photos/seed/${komik.slug}-${currentChapter.slug}-p4/800/1200",
+            "https://picsum.photos/seed/${komik.slug}-${currentChapter.slug}-p5/800/1200",
+            "https://picsum.photos/seed/${komik.slug}-${currentChapter.slug}-p6/800/1200"
+        )
+
+        return ChapterDetail(
+            komikSlug = komik.slug,
+            komikTitle = komik.title,
+            chapterSlug = currentChapter.slug,
+            chapterTitle = currentChapter.title,
+            chapterNumber = currentChapter.chapterNumber,
+            pages = samplePages,
+            prevChapterSlug = prevSlug,
+            nextChapterSlug = nextSlug
+        )
+    }
 }
