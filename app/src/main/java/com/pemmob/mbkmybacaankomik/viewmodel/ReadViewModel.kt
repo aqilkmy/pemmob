@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pemmob.mbkmybacaankomik.data.model.Chapter
 import com.pemmob.mbkmybacaankomik.data.model.ChapterDetail
-import com.pemmob.mbkmybacaankomik.data.remote.DummyDataSource
+import com.pemmob.mbkmybacaankomik.data.repository.MangaDexRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,31 +24,34 @@ sealed class ReadUiState {
     data class Error(val message: String) : ReadUiState()
 }
 
-class ReadViewModel : ViewModel() {
+class ReadViewModel(
+    private val repository: MangaDexRepository = MangaDexRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ReadUiState>(ReadUiState.Loading)
     val uiState: StateFlow<ReadUiState> = _uiState.asStateFlow()
 
-    private var currentKomikSlug: String = "legenda-garuda-putih"
-    private var currentChapterSlug: String = "bab-1"
+    private var currentKomikSlug: String = ""
+    private var currentChapterSlug: String = ""
 
     /**
-     * Memuat halaman gambar chapter komik.
-     * Siap dihubungkan ke Retrofit API di masa mendatang.
+     * Memuat halaman gambar chapter komik dari MangaDex At-Home server.
      */
     fun loadChapter(komikSlug: String, chapterSlug: String) {
-        currentKomikSlug = komikSlug.ifBlank { "legenda-garuda-putih" }
-        currentChapterSlug = chapterSlug.ifBlank { "bab-1" }
+        currentKomikSlug = komikSlug
+        currentChapterSlug = chapterSlug
 
         viewModelScope.launch {
             _uiState.value = ReadUiState.Loading
             try {
-                // Di masa depan: call repository / RetrofitInstance.api.getChapterPages(chapterSlug)
-                val allChapters = DummyDataSource.dummyChapterList
-                val detail = DummyDataSource.getChapterDetail(currentKomikSlug, currentChapterSlug)
-                val currentIndex = allChapters.indexOfFirst { it.slug == currentChapterSlug }.let {
-                    if (it == -1) 0 else it
-                }
+                val detailResult = repository.getChapterDetail(komikSlug, chapterSlug)
+                val mangaDetailResult = repository.getMangaDetail(komikSlug)
+
+                val allChapters = mangaDetailResult.getOrNull()?.second ?: emptyList()
+                val detail = detailResult.getOrThrow()
+
+                val currentIndex = allChapters.indexOfFirst { it.slug == chapterSlug || it.id == chapterSlug }
+                    .let { if (it == -1) 0 else it }
 
                 _uiState.value = ReadUiState.Success(
                     chapterDetail = detail,
@@ -58,7 +61,7 @@ class ReadViewModel : ViewModel() {
                 )
             } catch (e: Exception) {
                 _uiState.value = ReadUiState.Error(
-                    message = e.localizedMessage ?: "Gagal memuat chapter komik."
+                    message = e.localizedMessage ?: "Gagal memuat chapter komik dari server MangaDex."
                 )
             }
         }

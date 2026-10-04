@@ -2,13 +2,17 @@ package com.pemmob.mbkmybacaankomik.ui.screen
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -17,10 +21,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -72,7 +78,7 @@ fun HomeScreen(
     var selectedBottomNav by remember { mutableIntStateOf(0) }
 
     Scaffold(
-        containerColor = MbkBgDark,
+        containerColor = MbkBackground,
         topBar     = { HomeTopBar() },
         bottomBar  = {
             MbkBottomNavigation(
@@ -85,48 +91,106 @@ fun HomeScreen(
         when (val state = uiState) {
             is HomeUiState.Loading -> {
                 Box(
-                    Modifier.fillMaxSize().padding(paddingValues),
+                    Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
                     contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator(color = MbkPrimary) }
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(color = MbkPrimary, strokeWidth = 3.dp)
+                        Text(
+                            "Memuat katalog komik...",
+                            color = MbkTextSecondary,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
             }
             is HomeUiState.Error -> {
                 Box(
-                    Modifier.fillMaxSize().padding(paddingValues),
+                    Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(state.message, color = MbkTextSecondary)
-                        Spacer(Modifier.height(12.dp))
-                        Button(
-                            onClick = { viewModel.loadHomePage() },
-                            colors  = ButtonDefaults.buttonColors(MbkPrimary)
-                        ) { Text("Coba Lagi") }
+                    Card(
+                        modifier = Modifier.padding(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = MbkSurface),
+                        border = BorderStroke(1.dp, MbkBorder),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                Icons.Filled.CloudOff,
+                                contentDescription = null,
+                                tint = MbkTextHint,
+                                modifier = Modifier.size(44.dp)
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "Gagal Memuat Data",
+                                color = MbkTextPrimary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                state.message,
+                                color = MbkTextSecondary,
+                                fontSize = 12.sp,
+                                maxLines = 3
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            Button(
+                                onClick = { viewModel.loadHomePage() },
+                                colors  = ButtonDefaults.buttonColors(containerColor = MbkPrimary),
+                                shape   = RoundedCornerShape(10.dp)
+                            ) {
+                                Icon(Icons.Filled.Refresh, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Coba Lagi", fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                     }
                 }
             }
             is HomeUiState.Success -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
-                    // Search bar
+                    // Search bar interaktif
                     item {
                         SearchBar(
+                            query = state.searchQuery,
+                            onQueryChanged = { viewModel.onSearchQueryChanged(it) },
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                         )
                     }
-                    // Banner utama
-                    item {
-                        FeaturedBanner(
-                            komik  = state.featuredKomik,
-                            onKlik = { navController.navigate("detail/${state.featuredKomik.slug}") },
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                        Spacer(Modifier.height(20.dp))
+
+                    // Banner utama (hanya tampil jika tidak sedang searching)
+                    if (state.searchQuery.isBlank()) {
+                        item {
+                            FeaturedBanner(
+                                komik  = state.featuredKomik,
+                                onKlik = { navController.navigate("detail/${state.featuredKomik.slug}") },
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                            Spacer(Modifier.height(20.dp))
+                        }
                     }
+
                     // Filter kategori
                     item {
-                        SectionHeader("Kategori", modifier = Modifier.padding(horizontal = 16.dp))
+                        SectionHeader("Kategori Genre", modifier = Modifier.padding(horizontal = 16.dp))
                         Spacer(Modifier.height(10.dp))
                         KategoriRow(
                             items           = kategoriList,
@@ -135,30 +199,63 @@ fun HomeScreen(
                         )
                         Spacer(Modifier.height(20.dp))
                     }
+
                     // Header katalog
                     item {
-                        SectionHeader("Katalog Komik", modifier = Modifier.padding(horizontal = 16.dp))
-                        Spacer(Modifier.height(10.dp))
-                    }
-                    // Grid 2 kolom
-                    val chunked = state.komikList.chunked(2)
-                    items(chunked) { rowItems ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            rowItems.forEach { komik ->
-                                KomikCard(
-                                    komik   = komik,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { navController.navigate("detail/${komik.slug}") }
-                                )
-                            }
-                            if (rowItems.size < 2) Spacer(Modifier.weight(1f))
+                        val headerTitle = if (state.searchQuery.isNotBlank()) {
+                            "Hasil Pencarian: \"${state.searchQuery}\""
+                        } else {
+                            "Katalog Komik (${state.selectedGenre})"
                         }
+                        SectionHeader(headerTitle, modifier = Modifier.padding(horizontal = 16.dp))
                         Spacer(Modifier.height(12.dp))
+                    }
+
+                    if (state.komikList.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 48.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        Icons.Filled.SearchOff,
+                                        contentDescription = null,
+                                        tint = MbkTextHint,
+                                        modifier = Modifier.size(40.dp)
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        "Tidak ada komik yang ditemukan.",
+                                        color = MbkTextSecondary,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        // Grid 2 kolom yang rapi
+                        val chunked = state.komikList.chunked(2)
+                        items(chunked) { rowItems ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                rowItems.forEach { komik ->
+                                    KomikCard(
+                                        komik   = komik,
+                                        modifier = Modifier.weight(1f),
+                                        onClick = { navController.navigate("detail/${komik.slug}") }
+                                    )
+                                }
+                                if (rowItems.size < 2) Spacer(Modifier.weight(1f))
+                            }
+                            Spacer(Modifier.height(14.dp))
+                        }
                     }
                 }
             }
@@ -169,46 +266,112 @@ fun HomeScreen(
 // ─── TOP BAR ──────────────────────────────────────────────────────────────────
 @Composable
 private fun HomeTopBar() {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MbkTopBarColor)
             .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            "Beranda",
-            color      = MbkTextPrimary,
-            fontWeight = FontWeight.Bold,
-            fontSize   = 18.sp
-        )
-        IconButton(onClick = {}) {
-            Icon(
-                Icons.Outlined.Notifications,
-                contentDescription = "Notifikasi",
-                tint = MbkTextSecondary,
-                modifier = Modifier.size(22.dp)
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    "MBK Baca Komik",
+                    color      = MbkTextPrimary,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize   = 19.sp,
+                    letterSpacing = (-0.3).sp
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(MbkPrimary)
+                    )
+                    Spacer(Modifier.width(5.dp))
+                    Text(
+                        "MangaDex Online",
+                        color      = MbkPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize   = 11.sp
+                    )
+                }
+            }
+            IconButton(
+                onClick = {},
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(MbkSurfaceVariant)
+                    .size(38.dp)
+            ) {
+                Icon(
+                    Icons.Outlined.Notifications,
+                    contentDescription = "Notifikasi",
+                    tint = MbkTextPrimary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
+        HorizontalDivider(color = MbkBorder, thickness = 1.dp)
     }
 }
 
 // ─── SEARCH BAR ───────────────────────────────────────────────────────────────
 @Composable
-private fun SearchBar(modifier: Modifier = Modifier) {
+private fun SearchBar(
+    query: String,
+    onQueryChanged: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(MbkSurface)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .border(1.dp, MbkBorder, RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Filled.Search, null, tint = MbkTextHint, modifier = Modifier.size(18.dp))
+        Icon(Icons.Filled.Search, null, tint = MbkPrimary, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(10.dp))
-        Text("Cari judul, author, genre...", color = MbkTextHint, fontSize = 14.sp)
+        BasicTextField(
+            value = query,
+            onValueChange = onQueryChanged,
+            modifier = Modifier.weight(1f),
+            textStyle = TextStyle(
+                color = MbkTextPrimary,
+                fontSize = 14.sp
+            ),
+            singleLine = true,
+            decorationBox = { innerTextField ->
+                if (query.isEmpty()) {
+                    Text("Cari judul manga, manhwa, author...", color = MbkTextHint, fontSize = 13.sp)
+                }
+                innerTextField()
+            }
+        )
+        if (query.isNotEmpty()) {
+            IconButton(
+                onClick = { onQueryChanged("") },
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Clear,
+                    contentDescription = "Hapus",
+                    tint = MbkTextHint,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
     }
 }
 
@@ -219,66 +382,91 @@ private fun FeaturedBanner(
     onKlik: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(180.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onKlik)
+            .height(190.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, MbkBorder),
+        colors = CardDefaults.cardColors(containerColor = MbkSurface)
     ) {
-        AsyncImage(
-            model              = komik.thumbnail,
-            contentDescription = komik.title,
-            contentScale       = ContentScale.Crop,
-            modifier           = Modifier.fillMaxSize()
-        )
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
-                    )
-                )
-        )
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(12.dp)
+                .clickable(onClick = onKlik)
         ) {
-            // Badge status
+            AsyncImage(
+                model              = komik.thumbnail,
+                contentDescription = komik.title,
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier.fillMaxSize()
+            )
+            // Scrim gradien gelap agar teks selalu tajam dan kontras
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MbkOngoing)
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(komik.status, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-            }
-            Spacer(Modifier.height(4.dp))
-            Text(
-                komik.title,
-                color      = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize   = 16.sp,
-                maxLines   = 1,
-                overflow   = TextOverflow.Ellipsis
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.45f),
+                                Color.Black.copy(alpha = 0.90f)
+                            )
+                        )
+                    )
             )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                komik.author,
-                color    = MbkTextSecondary,
-                fontSize = 12.sp
-            )
-            Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = onKlik,
-                shape   = RoundedCornerShape(8.dp),
-                colors  = ButtonDefaults.buttonColors(containerColor = MbkPrimary),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                modifier = Modifier.height(32.dp)
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(14.dp)
             ) {
-                Text("Baca Sekarang", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MbkPrimary)
+                            .padding(horizontal = 7.dp, vertical = 2.5.dp)
+                    ) {
+                        Text("UNGGULAN", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold)
+                    }
+                    Spacer(Modifier.width(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.White.copy(alpha = 0.2f))
+                            .padding(horizontal = 6.dp, vertical = 2.5.dp)
+                    ) {
+                        Text(komik.type, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                Spacer(Modifier.height(5.dp))
+                Text(
+                    komik.title,
+                    color      = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize   = 16.sp,
+                    maxLines   = 1,
+                    overflow   = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    komik.author,
+                    color    = Color.White.copy(alpha = 0.85f),
+                    fontSize = 11.sp
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = onKlik,
+                    shape   = RoundedCornerShape(8.dp),
+                    colors  = ButtonDefaults.buttonColors(containerColor = MbkPrimary),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(15.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Baca Sekarang", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
             }
         }
     }
@@ -302,17 +490,25 @@ private fun KategoriRow(
                 animationSpec = tween(200), label = ""
             )
             val textColor by animateColorAsState(
-                if (isSelected) Color.White else MbkTextSecondary,
+                if (isSelected) Color.White else MbkTextPrimary,
                 animationSpec = tween(200), label = ""
             )
+            val borderColor = if (isSelected) MbkPrimary else MbkBorder
+
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(20.dp))
                     .background(bgColor)
+                    .border(1.dp, borderColor, RoundedCornerShape(20.dp))
                     .clickable { onGenreSelected(item.genre) }
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 7.dp)
             ) {
-                Text(item.label, color = textColor, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    item.label,
+                    color = textColor,
+                    fontSize = 12.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                )
             }
         }
     }
@@ -325,61 +521,92 @@ private fun KomikCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    Column(
+    Card(
         modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .clickable(onClick = onClick)
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
+        border = BorderStroke(1.dp, MbkBorder),
+        colors = CardDefaults.cardColors(containerColor = MbkSurface)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(165.dp)
-                .clip(RoundedCornerShape(10.dp))
-        ) {
-            AsyncImage(
-                model              = komik.thumbnail,
-                contentDescription = komik.title,
-                contentScale       = ContentScale.Crop,
-                modifier           = Modifier.fillMaxSize()
-            )
-            // Badge tipe komik
+        Column {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(5.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MbkBgDark.copy(alpha = 0.75f))
-                    .padding(horizontal = 5.dp, vertical = 2.dp)
-            ) {
-                Text(komik.type, color = MbkTextSecondary, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-            }
-            // Chapter terbaru
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
                     .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .padding(horizontal = 5.dp, vertical = 3.dp)
+                    .height(175.dp)
             ) {
-                Text(komik.latestChapter, color = Color.White, fontSize = 10.sp)
+                AsyncImage(
+                    model              = komik.thumbnail,
+                    contentDescription = komik.title,
+                    contentScale       = ContentScale.Crop,
+                    modifier           = Modifier.fillMaxSize()
+                )
+                // Badge tipe komik di pojok kiri atas
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.Black.copy(alpha = 0.70f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(komik.type, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+
+                // Overlay chapter di bawah cover
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))
+                            )
+                        )
+                        .padding(horizontal = 7.dp, vertical = 4.dp)
+                ) {
+                    Text(komik.latestChapter, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            Column(modifier = Modifier.padding(10.dp)) {
+                Text(
+                    komik.title,
+                    color      = MbkTextPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize   = 13.sp,
+                    maxLines   = 2,
+                    overflow   = TextOverflow.Ellipsis,
+                    lineHeight = 17.sp
+                )
+                Spacer(Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        komik.author,
+                        color    = MbkTextSecondary,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Star, null, tint = MbkRating, modifier = Modifier.size(12.dp))
+                        Spacer(Modifier.width(2.dp))
+                        Text(
+                            "${komik.rating}",
+                            color = MbkTextPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
             }
         }
-        Spacer(Modifier.height(5.dp))
-        Text(
-            komik.title,
-            color      = MbkTextPrimary,
-            fontWeight = FontWeight.SemiBold,
-            fontSize   = 12.sp,
-            maxLines   = 2,
-            overflow   = TextOverflow.Ellipsis
-        )
-        Text(
-            komik.author,
-            color    = MbkTextHint,
-            fontSize = 10.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }
 
@@ -390,7 +617,8 @@ private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
         title,
         color      = MbkTextPrimary,
         fontWeight = FontWeight.Bold,
-        fontSize   = 15.sp,
+        fontSize   = 16.sp,
+        letterSpacing = (-0.2).sp,
         modifier   = modifier
     )
 }
@@ -402,43 +630,46 @@ private fun MbkBottomNavigation(
     selectedIdx: Int,
     onItemClick: (Int, BottomNavItem) -> Unit
 ) {
-    NavigationBar(
-        containerColor = MbkTopBarColor,
-        tonalElevation = 0.dp
-    ) {
-        items.forEachIndexed { idx, item ->
-            val isSelected = idx == selectedIdx
-            val tint by animateColorAsState(
-                if (isSelected) MbkPrimary else MbkTextHint,
-                animationSpec = tween(200), label = ""
-            )
-            NavigationBarItem(
-                selected = isSelected,
-                onClick  = { onItemClick(idx, item) },
-                icon     = {
-                    Icon(
-                        if (isSelected) item.selectedIcon else item.unselectedIcon,
-                        contentDescription = item.label,
-                        tint = tint,
-                        modifier = Modifier.size(22.dp)
-                    )
-                },
-                label    = {
-                    Text(
-                        item.label,
-                        fontSize   = 10.sp,
-                        color      = tint,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                    )
-                },
-                colors   = NavigationBarItemDefaults.colors(
-                    indicatorColor      = MbkPrimary.copy(alpha = 0.15f),
-                    selectedIconColor   = MbkPrimary,
-                    unselectedIconColor = MbkTextHint,
-                    selectedTextColor   = MbkPrimary,
-                    unselectedTextColor = MbkTextHint
+    Column {
+        HorizontalDivider(color = MbkBorder, thickness = 1.dp)
+        NavigationBar(
+            containerColor = MbkTopBarColor,
+            tonalElevation = 0.dp
+        ) {
+            items.forEachIndexed { idx, item ->
+                val isSelected = idx == selectedIdx
+                val tint by animateColorAsState(
+                    if (isSelected) MbkPrimary else MbkTextHint,
+                    animationSpec = tween(200), label = ""
                 )
-            )
+                NavigationBarItem(
+                    selected = isSelected,
+                    onClick  = { onItemClick(idx, item) },
+                    icon     = {
+                        Icon(
+                            if (isSelected) item.selectedIcon else item.unselectedIcon,
+                            contentDescription = item.label,
+                            tint = tint,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    },
+                    label    = {
+                        Text(
+                            item.label,
+                            fontSize   = 10.sp,
+                            color      = tint,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    colors   = NavigationBarItemDefaults.colors(
+                        indicatorColor      = MbkPrimary.copy(alpha = 0.12f),
+                        selectedIconColor   = MbkPrimary,
+                        unselectedIconColor = MbkTextHint,
+                        selectedTextColor   = MbkPrimary,
+                        unselectedTextColor = MbkTextHint
+                    )
+                )
+            }
         }
     }
 }

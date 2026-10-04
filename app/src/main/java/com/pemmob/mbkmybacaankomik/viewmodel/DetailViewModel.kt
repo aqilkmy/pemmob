@@ -1,12 +1,14 @@
 package com.pemmob.mbkmybacaankomik.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.pemmob.mbkmybacaankomik.data.model.Chapter
 import com.pemmob.mbkmybacaankomik.data.model.Komik
-import com.pemmob.mbkmybacaankomik.data.remote.DummyDataSource
+import com.pemmob.mbkmybacaankomik.data.repository.MangaDexRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * UiState untuk DetailScreen (Loading / Success / Error).
@@ -21,23 +23,38 @@ sealed class DetailUiState {
     data class Error(val message: String) : DetailUiState()
 }
 
-class DetailViewModel : ViewModel() {
+class DetailViewModel(
+    private val repository: MangaDexRepository = MangaDexRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
 
     /**
-     * Muat detail komik berdasarkan slug.
-     * TODO: Ganti dengan call ke API (RetrofitInstance.api.getDetailKomik(slug)) saat siap.
+     * Memuat detail komik dan daftar chapter dari MangaDex REST API.
      */
     fun loadDetail(komikSlug: String = "legenda-garuda-putih") {
-        val komik = DummyDataSource.dummyKomikList.find { it.slug == komikSlug }
-            ?: DummyDataSource.dummyKomikList[0]
-
-        _uiState.value = DetailUiState.Success(
-            komik    = komik,
-            chapters = DummyDataSource.dummyChapterList
-        )
+        viewModelScope.launch {
+            _uiState.value = DetailUiState.Loading
+            try {
+                val result = repository.getMangaDetail(komikSlug)
+                result.onSuccess { (komik, chapters) ->
+                    _uiState.value = DetailUiState.Success(
+                        komik = komik,
+                        chapters = chapters,
+                        isChapterSortAsc = true
+                    )
+                }.onFailure { error ->
+                    _uiState.value = DetailUiState.Error(
+                        error.localizedMessage ?: "Gagal memuat detail komik dari MangaDex."
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = DetailUiState.Error(
+                    e.localizedMessage ?: "Terjadi kesalahan saat memuat data komik."
+                )
+            }
+        }
     }
 
     fun toggleChapterSort() {
@@ -50,7 +67,7 @@ class DetailViewModel : ViewModel() {
             }
             _uiState.value = current.copy(
                 isChapterSortAsc = !current.isChapterSortAsc,
-                chapters         = sorted
+                chapters = sorted
             )
         }
     }

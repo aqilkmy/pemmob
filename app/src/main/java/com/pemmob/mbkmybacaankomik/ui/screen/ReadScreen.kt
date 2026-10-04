@@ -5,7 +5,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -18,6 +20,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.NavigateBefore
+import androidx.compose.material.icons.automirrored.filled.NavigateNext
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -73,7 +78,7 @@ fun ReadScreen(
     }
 
     Scaffold(
-        containerColor = MbkBgDark
+        containerColor = MbkBackground
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -113,6 +118,8 @@ fun ReadScreen(
                         Card(
                             colors = CardDefaults.cardColors(containerColor = MbkSurface),
                             shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, MbkBorder),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(
@@ -273,7 +280,7 @@ private fun ReaderPageItem(
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()
-            .background(MbkBgDark)
+            .background(MbkBackground)
     ) {
         SubcomposeAsyncImage(
             model = pageUrl,
@@ -366,7 +373,7 @@ private fun ReaderChapterInfoBanner(
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(MbkTopBarColor, MbkBgDark)
+                    colors = listOf(MbkSurface, MbkBackground)
                 )
             )
             .padding(horizontal = 20.dp, vertical = 16.dp)
@@ -408,7 +415,9 @@ private fun ChapterCompletionSection(
             .fillMaxWidth()
             .padding(16.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MbkSurface)
+        colors = CardDefaults.cardColors(containerColor = MbkSurface),
+        border = BorderStroke(1.dp, MbkBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -490,6 +499,7 @@ private fun ChapterCompletionSection(
                             .weight(1f)
                             .height(44.dp),
                         shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, MbkBorder),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MbkTextPrimary)
                     ) {
                         Icon(
@@ -508,6 +518,7 @@ private fun ChapterCompletionSection(
                         .weight(1f)
                         .height(44.dp),
                     shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, MbkBorder),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MbkTextSecondary)
                 ) {
                     Icon(
@@ -532,8 +543,9 @@ private fun ReaderTopBar(
     onOpenChapterList: () -> Unit
 ) {
     Surface(
-        color = MbkTopBarColor.copy(alpha = 0.94f),
-        shadowElevation = 8.dp,
+        color = Color.White.copy(alpha = 0.98f),
+        shadowElevation = 4.dp,
+        border = BorderStroke(1.dp, MbkBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -595,8 +607,9 @@ private fun ReaderBottomBar(
     onOpenChapterList: () -> Unit
 ) {
     Surface(
-        color = MbkTopBarColor.copy(alpha = 0.94f),
-        shadowElevation = 12.dp,
+        color = Color.White.copy(alpha = 0.98f),
+        shadowElevation = 8.dp,
+        border = BorderStroke(1.dp, MbkBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -618,12 +631,13 @@ private fun ReaderBottomBar(
                     disabledContainerColor = MbkSurface.copy(alpha = 0.5f),
                     disabledContentColor = MbkTextHint
                 ),
+                border = BorderStroke(1.dp, MbkBorder),
                 shape = RoundedCornerShape(8.dp),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                 modifier = Modifier.height(38.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.NavigateBefore,
+                    imageVector = Icons.AutoMirrored.Filled.NavigateBefore,
                     contentDescription = "Sebelumnya",
                     modifier = Modifier.size(20.dp)
                 )
@@ -636,13 +650,14 @@ private fun ReaderBottomBar(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .clickable(onClick = onOpenChapterList)
-                    .background(MbkSurface)
+                    .background(MbkSurfaceVariant)
+                    .border(1.dp, MbkBorder, RoundedCornerShape(8.dp))
                     .padding(horizontal = 14.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.MenuBook,
+                        imageVector = Icons.AutoMirrored.Filled.MenuBook,
                         contentDescription = null,
                         tint = MbkPrimary,
                         modifier = Modifier.size(14.dp)
@@ -675,7 +690,7 @@ private fun ReaderBottomBar(
                 Text("Next", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.width(2.dp))
                 Icon(
-                    imageVector = Icons.Default.NavigateNext,
+                    imageVector = Icons.AutoMirrored.Filled.NavigateNext,
                     contentDescription = "Selanjutnya",
                     modifier = Modifier.size(20.dp)
                 )
@@ -716,7 +731,7 @@ private fun ChapterSelectorSheetContent(
             )
         }
 
-        HorizontalDivider(color = MbkSurfaceVariant)
+        HorizontalDivider(color = MbkBorder)
 
         LazyColumn(
             modifier = Modifier
@@ -768,7 +783,7 @@ private fun ChapterSelectorSheetContent(
                         }
                     }
                 }
-                HorizontalDivider(color = MbkSurfaceVariant, thickness = 0.5.dp)
+                HorizontalDivider(color = MbkDivider, thickness = 0.5.dp)
             }
         }
     }
