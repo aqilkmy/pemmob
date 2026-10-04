@@ -1,18 +1,20 @@
 package com.pemmob.mbkmybacaankomik.ui.screen
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -21,13 +23,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,91 +38,89 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.pemmob.mbkmybacaankomik.data.model.Komik
-import com.pemmob.mbkmybacaankomik.ui.theme.*
+import com.pemmob.mbkmybacaankomik.viewmodel.HomeTab
 import com.pemmob.mbkmybacaankomik.viewmodel.HomeUiState
 import com.pemmob.mbkmybacaankomik.viewmodel.HomeViewModel
 
-// ─── Kategori Cepat ───────────────────────────────────────────────────────────
-private data class KategoriCepat(val label: String, val icon: ImageVector, val genre: String)
+// ─── Data Kategori ───────────────────────────────────────────────────────────
+private data class KategoriItem(val label: String, val icon: ImageVector, val genre: String)
 
 private val kategoriList = listOf(
-    KategoriCepat("Semua",    Icons.Filled.GridView,      "semua"),
-    KategoriCepat("Fantasy",  Icons.Filled.AutoAwesome,   "fantasy"),
-    KategoriCepat("Aksi",     Icons.Filled.Bolt,          "action"),
-    KategoriCepat("Romantis", Icons.Filled.Favorite,      "romance"),
-    KategoriCepat("Komedi",   Icons.Filled.EmojiEmotions, "comedy"),
-    KategoriCepat("Horror",   Icons.Filled.Nightlight,    "horror"),
-    KategoriCepat("Sci-Fi",   Icons.Filled.RocketLaunch,  "sci-fi"),
-    KategoriCepat("Misteri",  Icons.Filled.Search,        "mystery"),
+    KategoriItem("Semua",    Icons.Filled.GridView,      "semua"),
+    KategoriItem("Fantasy",  Icons.Filled.AutoAwesome,   "fantasy"),
+    KategoriItem("Aksi",     Icons.Filled.Bolt,          "action"),
+    KategoriItem("Romantis", Icons.Filled.Favorite,      "romance"),
+    KategoriItem("Komedi",   Icons.Filled.EmojiEmotions, "comedy"),
+    KategoriItem("Horror",   Icons.Filled.Nightlight,    "horror"),
+    KategoriItem("Sci-Fi",   Icons.Filled.RocketLaunch,  "sci-fi"),
+    KategoriItem("Misteri",  Icons.Filled.Search,        "mystery"),
 )
 
-// ─── Bottom Nav ───────────────────────────────────────────────────────────────
-private data class BottomNavItem(
-    val label: String,
-    val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector,
-    val route: String
-)
-
-private val bottomNavItems = listOf(
-    BottomNavItem("Beranda",  Icons.Filled.Home,        Icons.Outlined.Home,        "home"),
-    BottomNavItem("Populer",  Icons.Filled.Leaderboard, Icons.Outlined.Leaderboard, "ranking"),
-    BottomNavItem("Terbaru",  Icons.Filled.NewReleases, Icons.Outlined.NewReleases, "terbaru"),
-)
-
-// ─── HomeScreen ───────────────────────────────────────────────────────────────
+// ─── HomeScreen (Material Design 3) ───────────────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navController: NavController,
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var selectedBottomNav by remember { mutableIntStateOf(0) }
 
     Scaffold(
-        containerColor = MbkBackground,
-        topBar     = { HomeTopBar() },
-        bottomBar  = {
-            MbkBottomNavigation(
-                items       = bottomNavItems,
-                selectedIdx = selectedBottomNav,
-                onItemClick = { idx, _ -> selectedBottomNav = idx }
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            M3HomeTopBar(
+                onRefresh = { viewModel.loadHomePage() }
+            )
+        },
+        bottomBar = {
+            val currentTab = when (val s = uiState) {
+                is HomeUiState.Success -> s.currentTab
+                else -> HomeTab.BERANDA
+            }
+            M3BottomNavigationBar(
+                currentTab = currentTab,
+                onTabSelected = { viewModel.onTabSelected(it) }
             )
         }
     ) { paddingValues ->
         when (val state = uiState) {
             is HomeUiState.Loading -> {
                 Box(
-                    Modifier
+                    modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        CircularProgressIndicator(color = MbkPrimary, strokeWidth = 3.dp)
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 3.dp
+                        )
                         Text(
-                            "Memuat katalog komik...",
-                            color = MbkTextSecondary,
-                            fontSize = 13.sp
+                            "Menghubungkan ke MangaDex...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
+
             is HomeUiState.Error -> {
                 Box(
-                    Modifier
+                    modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    Card(
+                    ElevatedCard(
                         modifier = Modifier.padding(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = MbkSurface),
-                        border = BorderStroke(1.dp, MbkBorder),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
                     ) {
                         Column(
                             modifier = Modifier.padding(24.dp),
@@ -129,125 +129,164 @@ fun HomeScreen(
                             Icon(
                                 Icons.Filled.CloudOff,
                                 contentDescription = null,
-                                tint = MbkTextHint,
-                                modifier = Modifier.size(44.dp)
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(48.dp)
                             )
                             Spacer(Modifier.height(12.dp))
                             Text(
-                                "Gagal Memuat Data",
-                                color = MbkTextPrimary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                "Gagal Memuat MangaDex",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold
                             )
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(6.dp))
                             Text(
                                 state.message,
-                                color = MbkTextSecondary,
-                                fontSize = 12.sp,
-                                maxLines = 3
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(18.dp))
                             Button(
                                 onClick = { viewModel.loadHomePage() },
-                                colors  = ButtonDefaults.buttonColors(containerColor = MbkPrimary),
-                                shape   = RoundedCornerShape(10.dp)
+                                shape = MaterialTheme.shapes.medium,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
                             ) {
-                                Icon(Icons.Filled.Refresh, null, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("Coba Lagi", fontWeight = FontWeight.SemiBold)
+                                Icon(Icons.Filled.Refresh, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Coba Lagi")
                             }
                         }
                     }
                 }
             }
+
             is HomeUiState.Success -> {
+                val isSearching = state.searchQuery.isNotBlank()
+
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
-                    // Search bar interaktif
+                    // 1. Material 3 Search Bar
                     item {
-                        SearchBar(
+                        M3SearchBar(
                             query = state.searchQuery,
                             onQueryChanged = { viewModel.onSearchQueryChanged(it) },
+                            onClear = { viewModel.onClearSearch() },
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                         )
                     }
 
-                    // Banner utama (hanya tampil jika tidak sedang searching)
-                    if (state.searchQuery.isBlank()) {
+                    // 2. Banner Utama (Hanya tampil di tab Beranda & tidak sedang mencari)
+                    if (state.currentTab == HomeTab.BERANDA && !isSearching) {
                         item {
-                            FeaturedBanner(
-                                komik  = state.featuredKomik,
+                            M3FeaturedBanner(
+                                komik = state.featuredKomik,
                                 onKlik = { navController.navigate("detail/${state.featuredKomik.slug}") },
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
-                            Spacer(Modifier.height(20.dp))
+                            Spacer(Modifier.height(18.dp))
                         }
                     }
 
-                    // Filter kategori
+                    // 3. Filter Kategori (Material 3 FilterChip)
                     item {
-                        SectionHeader("Kategori Genre", modifier = Modifier.padding(horizontal = 16.dp))
-                        Spacer(Modifier.height(10.dp))
-                        KategoriRow(
-                            items           = kategoriList,
-                            selectedGenre   = state.selectedGenre,
+                        Text(
+                            text = "Filter Genre",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        M3KategoriFilterRow(
+                            items = kategoriList,
+                            selectedGenre = state.selectedGenre,
                             onGenreSelected = { viewModel.onGenreSelected(it) }
                         )
-                        Spacer(Modifier.height(20.dp))
+                        Spacer(Modifier.height(16.dp))
                     }
 
-                    // Header katalog
+                    // 4. Header Seksi Sesuai Tab / Status Pencarian
                     item {
-                        val headerTitle = if (state.searchQuery.isNotBlank()) {
-                            "Hasil Pencarian: \"${state.searchQuery}\""
-                        } else {
-                            "Katalog Komik (${state.selectedGenre})"
+                        val headerTitle = when {
+                            isSearching -> "Hasil Pencarian: \"${state.searchQuery}\""
+                            state.currentTab == HomeTab.POPULER -> "Komik Terpopuler (${state.selectedGenre})"
+                            state.currentTab == HomeTab.TERBARU -> "Update Chapter Terbaru (${state.selectedGenre})"
+                            else -> "Rekomendasi Komik (${state.selectedGenre})"
                         }
-                        SectionHeader(headerTitle, modifier = Modifier.padding(horizontal = 16.dp))
-                        Spacer(Modifier.height(12.dp))
-                    }
 
-                    if (state.komikList.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 48.dp),
-                                contentAlignment = Alignment.Center
+                        val headerSubtitle = when {
+                            isSearching -> "Ditemukan ${state.komikList.size} judul dari MangaDex"
+                            state.currentTab == HomeTab.POPULER -> "Berdasarkan jumlah pembaca terbanyak"
+                            state.currentTab == HomeTab.TERBARU -> "Rilis chapter paling gres hari ini"
+                            else -> "Katalog pilihan terfavorit minggu ini"
+                        }
+
+                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(
-                                        Icons.Filled.SearchOff,
-                                        contentDescription = null,
-                                        tint = MbkTextHint,
-                                        modifier = Modifier.size(40.dp)
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                    Text(
-                                        "Tidak ada komik yang ditemukan.",
-                                        color = MbkTextSecondary,
-                                        fontSize = 14.sp
+                                Text(
+                                    text = headerTitle,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                if (state.isListLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
+                            Text(
+                                text = headerSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                    }
+
+                    // 5. Empty State atau Grid 2 Kolom
+                    if (state.komikList.isEmpty() && !state.isListLoading) {
+                        item {
+                            M3EmptyState(
+                                query = state.searchQuery,
+                                onReset = {
+                                    viewModel.onClearSearch()
+                                    viewModel.onGenreSelected("Semua")
+                                }
+                            )
                         }
                     } else {
-                        // Grid 2 kolom yang rapi
                         val chunked = state.komikList.chunked(2)
-                        items(chunked) { rowItems ->
+                        itemsIndexed(chunked) { rowIndex, rowItems ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
                                 horizontalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
-                                rowItems.forEach { komik ->
-                                    KomikCard(
-                                        komik   = komik,
+                                rowItems.forEachIndexed { colIndex, komik ->
+                                    val itemIndex = rowIndex * 2 + colIndex
+                                    val rankNumber = if (state.currentTab == HomeTab.POPULER && !isSearching) {
+                                        itemIndex + 1
+                                    } else null
+
+                                    M3KomikCard(
+                                        komik = komik,
+                                        rankNumber = rankNumber,
+                                        isLatestTab = state.currentTab == HomeTab.TERBARU && !isSearching,
                                         modifier = Modifier.weight(1f),
                                         onClick = { navController.navigate("detail/${komik.slug}") }
                                     )
@@ -263,133 +302,144 @@ fun HomeScreen(
     }
 }
 
-// ─── TOP BAR ──────────────────────────────────────────────────────────────────
+// ─── MATERIAL 3 TOP APP BAR ───────────────────────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTopBar() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MbkTopBarColor)
-            .statusBarsPadding()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(
-                    "MBK Baca Komik",
-                    color      = MbkTextPrimary,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize   = 19.sp,
-                    letterSpacing = (-0.3).sp
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 2.dp)
+private fun M3HomeTopBar(
+    onRefresh: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(36.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(MbkPrimary)
-                    )
-                    Spacer(Modifier.width(5.dp))
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Filled.AutoStories,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                Spacer(Modifier.width(10.dp))
+                Column {
                     Text(
-                        "MangaDex Online",
-                        color      = MbkPrimary,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize   = 11.sp
+                        text = "MBK Baca Komik",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.ExtraBold
                     )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "MangaDex API",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
-            IconButton(
-                onClick = {},
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(MbkSurfaceVariant)
-                    .size(38.dp)
-            ) {
+        },
+        actions = {
+            IconButton(onClick = onRefresh) {
                 Icon(
-                    Icons.Outlined.Notifications,
-                    contentDescription = "Notifikasi",
-                    tint = MbkTextPrimary,
-                    modifier = Modifier.size(20.dp)
+                    imageVector = Icons.Outlined.Refresh,
+                    contentDescription = "Muat Ulang",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        }
-        HorizontalDivider(color = MbkBorder, thickness = 1.dp)
-    }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface
+        )
+    )
 }
 
-// ─── SEARCH BAR ───────────────────────────────────────────────────────────────
+// ─── MATERIAL 3 SEARCH BAR ───────────────────────────────────────────────────
 @Composable
-private fun SearchBar(
+private fun M3SearchBar(
     query: String,
     onQueryChanged: (String) -> Unit,
+    onClear: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MbkSurface)
-            .border(1.dp, MbkBorder, RoundedCornerShape(12.dp))
-            .padding(horizontal = 14.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(Icons.Filled.Search, null, tint = MbkPrimary, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(10.dp))
-        BasicTextField(
-            value = query,
-            onValueChange = onQueryChanged,
-            modifier = Modifier.weight(1f),
-            textStyle = TextStyle(
-                color = MbkTextPrimary,
-                fontSize = 14.sp
-            ),
-            singleLine = true,
-            decorationBox = { innerTextField ->
-                if (query.isEmpty()) {
-                    Text("Cari judul manga, manhwa, author...", color = MbkTextHint, fontSize = 13.sp)
-                }
-                innerTextField()
-            }
-        )
-        if (query.isNotEmpty()) {
-            IconButton(
-                onClick = { onQueryChanged("") },
-                modifier = Modifier.size(24.dp)
+    val focusManager = LocalFocusManager.current
+
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChanged,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        placeholder = {
+            Text(
+                "Cari judul manga, manhwa, author...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = "Cari",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        trailingIcon = {
+            AnimatedVisibility(
+                visible = query.isNotEmpty(),
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
-                Icon(
-                    Icons.Filled.Clear,
-                    contentDescription = "Hapus",
-                    tint = MbkTextHint,
-                    modifier = Modifier.size(16.dp)
-                )
+                IconButton(onClick = onClear) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Hapus Pencarian",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-        }
-    }
+        },
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyMedium.copy(
+            color = MaterialTheme.colorScheme.onSurface
+        ),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+        ),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
+    )
 }
 
-// ─── FEATURED BANNER ──────────────────────────────────────────────────────────
+// ─── MATERIAL 3 FEATURED BANNER ──────────────────────────────────────────────
 @Composable
-private fun FeaturedBanner(
+private fun M3FeaturedBanner(
     komik: Komik,
     onKlik: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .height(190.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = BorderStroke(1.dp, MbkBorder),
-        colors = CardDefaults.cardColors(containerColor = MbkSurface)
+            .height(200.dp),
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Box(
             modifier = Modifier
@@ -397,12 +447,12 @@ private fun FeaturedBanner(
                 .clickable(onClick = onKlik)
         ) {
             AsyncImage(
-                model              = komik.thumbnail,
+                model = komik.thumbnail,
                 contentDescription = komik.title,
-                contentScale       = ContentScale.Crop,
-                modifier           = Modifier.fillMaxSize()
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
-            // Scrim gradien gelap agar teks selalu tajam dan kontras
+            // Scrim gradient gelap agar teks selalu tajam dan kontras
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -410,7 +460,7 @@ private fun FeaturedBanner(
                         Brush.verticalGradient(
                             listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.45f),
+                                Color.Black.copy(alpha = 0.40f),
                                 Color.Black.copy(alpha = 0.90f)
                             )
                         )
@@ -419,63 +469,83 @@ private fun FeaturedBanner(
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(14.dp)
+                    .padding(16.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(MbkPrimary)
-                            .padding(horizontal = 7.dp, vertical = 2.5.dp)
+                    Surface(
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 6.dp)
                     ) {
-                        Text("UNGGULAN", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(
+                            text = "UNGGULAN",
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                        )
                     }
-                    Spacer(Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.White.copy(alpha = 0.2f))
-                            .padding(horizontal = 6.dp, vertical = 2.5.dp)
+                    Surface(
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = Color.White.copy(alpha = 0.25f)
                     ) {
-                        Text(komik.type, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = komik.type,
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
                     }
                 }
-                Spacer(Modifier.height(5.dp))
+                Spacer(Modifier.height(6.dp))
                 Text(
-                    komik.title,
-                    color      = Color.White,
+                    text = komik.title,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    fontSize   = 16.sp,
-                    maxLines   = 1,
-                    overflow   = TextOverflow.Ellipsis
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.height(2.dp))
                 Text(
-                    komik.author,
-                    color    = Color.White.copy(alpha = 0.85f),
-                    fontSize = 11.sp
+                    text = "Karya: ${komik.author}",
+                    color = Color.White.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 Button(
                     onClick = onKlik,
-                    shape   = RoundedCornerShape(8.dp),
-                    colors  = ButtonDefaults.buttonColors(containerColor = MbkPrimary),
+                    shape = MaterialTheme.shapes.small,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                    modifier = Modifier.height(32.dp)
+                    modifier = Modifier.height(34.dp)
                 ) {
-                    Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(15.dp))
+                    Icon(
+                        Icons.Filled.PlayArrow,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
                     Spacer(Modifier.width(4.dp))
-                    Text("Baca Sekarang", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(
+                        "Baca Sekarang",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 }
             }
         }
     }
 }
 
-// ─── KATEGORI ROW ─────────────────────────────────────────────────────────────
+// ─── MATERIAL 3 FILTER CHIP ROW (KATEGORI) ───────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun KategoriRow(
-    items: List<KategoriCepat>,
+private fun M3KategoriFilterRow(
+    items: List<KategoriItem>,
     selectedGenre: String,
     onGenreSelected: (String) -> Unit
 ) {
@@ -485,73 +555,143 @@ private fun KategoriRow(
     ) {
         items(items) { item ->
             val isSelected = selectedGenre.equals(item.genre, ignoreCase = true)
-            val bgColor by animateColorAsState(
-                if (isSelected) MbkPrimary else MbkSurface,
-                animationSpec = tween(200), label = ""
-            )
-            val textColor by animateColorAsState(
-                if (isSelected) Color.White else MbkTextPrimary,
-                animationSpec = tween(200), label = ""
-            )
-            val borderColor = if (isSelected) MbkPrimary else MbkBorder
 
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(bgColor)
-                    .border(1.dp, borderColor, RoundedCornerShape(20.dp))
-                    .clickable { onGenreSelected(item.genre) }
-                    .padding(horizontal = 16.dp, vertical = 7.dp)
-            ) {
-                Text(
-                    item.label,
-                    color = textColor,
-                    fontSize = 12.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+            FilterChip(
+                selected = isSelected,
+                onClick = { onGenreSelected(item.genre) },
+                label = {
+                    Text(
+                        text = item.label,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                },
+                leadingIcon = if (isSelected) {
+                    {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else {
+                    {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                },
+                shape = RoundedCornerShape(8.dp),
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    labelColor = MaterialTheme.colorScheme.onSurface,
+                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isSelected,
+                    borderColor = MaterialTheme.colorScheme.outlineVariant,
+                    selectedBorderColor = MaterialTheme.colorScheme.primaryContainer
                 )
-            }
+            )
         }
     }
 }
 
-// ─── KOMIK CARD ───────────────────────────────────────────────────────────────
+// ─── MATERIAL 3 KOMIK CARD ───────────────────────────────────────────────────
 @Composable
-private fun KomikCard(
+private fun M3KomikCard(
     komik: Komik,
+    rankNumber: Int?,
+    isLatestTab: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    Card(
+    OutlinedCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
-        border = BorderStroke(1.dp, MbkBorder),
-        colors = CardDefaults.cardColors(containerColor = MbkSurface)
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(175.dp)
+                    .height(180.dp)
             ) {
                 AsyncImage(
-                    model              = komik.thumbnail,
+                    model = komik.thumbnail,
                     contentDescription = komik.title,
-                    contentScale       = ContentScale.Crop,
-                    modifier           = Modifier.fillMaxSize()
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
-                // Badge tipe komik di pojok kiri atas
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(6.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color.Black.copy(alpha = 0.70f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(komik.type, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+
+                // Badge Peringkat (Populer #1, #2, dst)
+                if (rankNumber != null) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(6.dp),
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = when (rankNumber) {
+                            1 -> MaterialTheme.colorScheme.primary
+                            2 -> MaterialTheme.colorScheme.secondary
+                            3 -> MaterialTheme.colorScheme.tertiary
+                            else -> Color.Black.copy(alpha = 0.75f)
+                        }
+                    ) {
+                        Text(
+                            text = "#$rankNumber",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                        )
+                    }
+                } else {
+                    // Badge Tipe Komik
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(6.dp),
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = Color.Black.copy(alpha = 0.70f)
+                    ) {
+                        Text(
+                            text = komik.type,
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
+                // Badge Status Baru Update
+                if (isLatestTab) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp),
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = MaterialTheme.colorScheme.error
+                    ) {
+                        Text(
+                            text = "UPDATE",
+                            color = MaterialTheme.colorScheme.onError,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                        )
+                    }
                 }
 
                 // Overlay chapter di bawah cover
@@ -564,21 +704,26 @@ private fun KomikCard(
                                 colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))
                             )
                         )
-                        .padding(horizontal = 7.dp, vertical = 4.dp)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Text(komik.latestChapter, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                    Text(
+                        text = komik.latestChapter,
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
 
             Column(modifier = Modifier.padding(10.dp)) {
                 Text(
-                    komik.title,
-                    color      = MbkTextPrimary,
+                    text = komik.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
-                    fontSize   = 13.sp,
-                    maxLines   = 2,
-                    overflow   = TextOverflow.Ellipsis,
-                    lineHeight = 17.sp
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
                 )
                 Spacer(Modifier.height(4.dp))
                 Row(
@@ -587,21 +732,26 @@ private fun KomikCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        komik.author,
-                        color    = MbkTextSecondary,
-                        fontSize = 11.sp,
+                        text = komik.author,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Star, null, tint = MbkRating, modifier = Modifier.size(12.dp))
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFF59E0B),
+                            modifier = Modifier.size(13.dp)
+                        )
                         Spacer(Modifier.width(2.dp))
                         Text(
-                            "${komik.rating}",
-                            color = MbkTextPrimary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold
+                            text = "${komik.rating}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -610,66 +760,85 @@ private fun KomikCard(
     }
 }
 
-// ─── SECTION HEADER ───────────────────────────────────────────────────────────
+// ─── MATERIAL 3 EMPTY STATE ───────────────────────────────────────────────────
 @Composable
-private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
-    Text(
-        title,
-        color      = MbkTextPrimary,
-        fontWeight = FontWeight.Bold,
-        fontSize   = 16.sp,
-        letterSpacing = (-0.2).sp,
-        modifier   = modifier
-    )
+private fun M3EmptyState(
+    query: String,
+    onReset: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp, horizontal = 24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Filled.SearchOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = if (query.isNotBlank()) "Tidak ada komik untuk \"$query\"" else "Tidak ada komik di kategori ini",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Coba gunakan kata kunci lain atau pilih kategori berbeda.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(16.dp))
+            FilledTonalButton(onClick = onReset) {
+                Icon(Icons.Filled.Refresh, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Reset Filter & Pencarian")
+            }
+        }
+    }
 }
 
-// ─── BOTTOM NAVIGATION ────────────────────────────────────────────────────────
+// ─── MATERIAL 3 BOTTOM NAVIGATION BAR ─────────────────────────────────────────
 @Composable
-private fun MbkBottomNavigation(
-    items: List<BottomNavItem>,
-    selectedIdx: Int,
-    onItemClick: (Int, BottomNavItem) -> Unit
+private fun M3BottomNavigationBar(
+    currentTab: HomeTab,
+    onTabSelected: (HomeTab) -> Unit
 ) {
-    Column {
-        HorizontalDivider(color = MbkBorder, thickness = 1.dp)
-        NavigationBar(
-            containerColor = MbkTopBarColor,
-            tonalElevation = 0.dp
-        ) {
-            items.forEachIndexed { idx, item ->
-                val isSelected = idx == selectedIdx
-                val tint by animateColorAsState(
-                    if (isSelected) MbkPrimary else MbkTextHint,
-                    animationSpec = tween(200), label = ""
-                )
-                NavigationBarItem(
-                    selected = isSelected,
-                    onClick  = { onItemClick(idx, item) },
-                    icon     = {
-                        Icon(
-                            if (isSelected) item.selectedIcon else item.unselectedIcon,
-                            contentDescription = item.label,
-                            tint = tint,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    },
-                    label    = {
-                        Text(
-                            item.label,
-                            fontSize   = 10.sp,
-                            color      = tint,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    colors   = NavigationBarItemDefaults.colors(
-                        indicatorColor      = MbkPrimary.copy(alpha = 0.12f),
-                        selectedIconColor   = MbkPrimary,
-                        unselectedIconColor = MbkTextHint,
-                        selectedTextColor   = MbkPrimary,
-                        unselectedTextColor = MbkTextHint
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp
+    ) {
+        HomeTab.values().forEach { tab ->
+            val isSelected = currentTab == tab
+
+            NavigationBarItem(
+                selected = isSelected,
+                onClick = { onTabSelected(tab) },
+                icon = {
+                    Icon(
+                        imageVector = if (isSelected) tab.iconSelected else tab.iconUnselected,
+                        contentDescription = tab.label
                     )
+                },
+                label = {
+                    Text(
+                        text = tab.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
+            )
         }
     }
 }

@@ -2,22 +2,24 @@ package com.pemmob.mbkmybacaankomik.ui.screen
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -31,7 +33,6 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.pemmob.mbkmybacaankomik.data.model.Chapter
 import com.pemmob.mbkmybacaankomik.data.model.Komik
-import com.pemmob.mbkmybacaankomik.ui.theme.*
 import com.pemmob.mbkmybacaankomik.viewmodel.DetailUiState
 import com.pemmob.mbkmybacaankomik.viewmodel.DetailViewModel
 
@@ -49,63 +50,112 @@ fun DetailScreen(
     }
 
     Scaffold(
-        containerColor = MbkBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Column(modifier = Modifier.fillMaxWidth().background(MbkTopBarColor).statusBarsPadding()) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            "Detail Komik",
-                            color = MbkTextPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp
+            TopAppBar(
+                title = {
+                    Text(
+                        "Detail Komik",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Kembali",
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = MbkTextPrimary)
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MbkTopBarColor)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { }) {
+                        Icon(
+                            Icons.Outlined.BookmarkBorder,
+                            contentDescription = "Bookmark",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = { }) {
+                        Icon(
+                            Icons.Outlined.Share,
+                            contentDescription = "Bagikan",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
-                HorizontalDivider(color = MbkBorder, thickness = 1.dp)
-            }
+            )
         }
     ) { paddingValues ->
         when (val state = uiState) {
             is DetailUiState.Loading -> {
-                Box(Modifier.fillMaxSize().padding(paddingValues), Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        CircularProgressIndicator(color = MbkPrimary, strokeWidth = 3.dp)
-                        Text("Memuat data komik...", color = MbkTextSecondary, fontSize = 13.sp)
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 3.dp
+                        )
+                        Text(
+                            "Memuat detail komik...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
+
             is DetailUiState.Error -> {
-                Box(Modifier.fillMaxSize().padding(paddingValues), Alignment.Center) {
-                    Card(
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ElevatedCard(
                         modifier = Modifier.padding(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = MbkSurface),
-                        border = BorderStroke(1.dp, MbkBorder),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         Column(
                             modifier = Modifier.padding(24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Filled.WarningAmber, null, tint = MbkAccent, modifier = Modifier.size(44.dp))
-                            Spacer(Modifier.height(10.dp))
-                            Text("Gagal Memuat Komik", color = MbkTextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Icon(
+                                Icons.Filled.ErrorOutline,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "Gagal Memuat Komik",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                             Spacer(Modifier.height(4.dp))
-                            Text(state.message, color = MbkTextSecondary, fontSize = 12.sp)
-                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                state.message,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(18.dp))
                             Button(
                                 onClick = { viewModel.loadDetail(komikSlug) },
-                                colors  = ButtonDefaults.buttonColors(containerColor = MbkPrimary),
-                                shape   = RoundedCornerShape(10.dp)
+                                shape = MaterialTheme.shapes.medium
                             ) {
                                 Text("Coba Lagi")
                             }
@@ -113,88 +163,106 @@ fun DetailScreen(
                     }
                 }
             }
+
             is DetailUiState.Success -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
                     contentPadding = PaddingValues(bottom = 32.dp)
                 ) {
-                    // 1. Profil Komik
+                    // 1. Profil Komik Banner
                     item {
-                        KomikProfileSection(komik = state.komik)
+                        M3KomikProfileSection(komik = state.komik)
                         Spacer(Modifier.height(16.dp))
                     }
 
-                    // 2. Genre Tags
+                    // 2. Genre Tags (M3 SuggestionChip)
                     item {
                         if (state.komik.genre.isNotEmpty()) {
-                            GenreTagRow(
-                                genres   = state.komik.genre,
+                            M3GenreTagRow(
+                                genres = state.komik.genre,
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                             Spacer(Modifier.height(14.dp))
                         }
                     }
 
-                    // 3. Sinopsis Card
+                    // 3. Sinopsis Card (M3 OutlinedCard)
                     item {
-                        SynopsisSection(
+                        M3SynopsisSection(
                             synopsis = state.komik.synopsis,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         Spacer(Modifier.height(16.dp))
                     }
 
-                    // 4. Tombol Utama Baca Sekarang
+                    // 4. Tombol Aksi Mulai Membaca (M3 Button)
                     item {
                         val firstChapterSlug = state.chapters.firstOrNull()?.slug ?: "bab-1"
                         Button(
-                            onClick  = { navController.navigate("read/${state.komik.slug}/$firstChapterSlug") },
+                            onClick = { navController.navigate("read/${state.komik.slug}/$firstChapterSlug") },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)
-                                .height(50.dp)
-                                .shadow(3.dp, RoundedCornerShape(12.dp)),
-                            shape  = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MbkPrimary)
+                                .height(50.dp),
+                            shape = MaterialTheme.shapes.medium,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.MenuBook, null, tint = Color.White, modifier = Modifier.size(19.dp))
+                            Icon(
+                                Icons.AutoMirrored.Filled.MenuBook,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
                             Spacer(Modifier.width(8.dp))
-                            Text("Mulai Membaca Bab Pertama", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
+                            Text(
+                                "Mulai Membaca Bab Pertama",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
                         }
                         Spacer(Modifier.height(20.dp))
                     }
 
                     // 5. Header Daftar Chapter
                     item {
-                        ChapterListHeader(
+                        M3ChapterListHeader(
                             totalChapters = state.chapters.size,
-                            isAsc         = state.isChapterSortAsc,
-                            onToggleSort  = { viewModel.toggleChapterSort() },
-                            modifier      = Modifier.padding(horizontal = 16.dp)
+                            isAsc = state.isChapterSortAsc,
+                            onToggleSort = { viewModel.toggleChapterSort() },
+                            modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         Spacer(Modifier.height(8.dp))
                     }
 
-                    // 6. List Chapter dalam Card Kontainer yang Rapi
+                    // 6. Daftar Chapter (M3 OutlinedCard Container)
                     item {
-                        Card(
+                        OutlinedCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = MbkSurface),
-                            border = BorderStroke(1.dp, MbkBorder),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.outlinedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                         ) {
                             Column {
                                 state.chapters.forEachIndexed { index, chapter ->
-                                    ChapterItem(
-                                        chapter  = chapter,
-                                        onClick  = { navController.navigate("read/${state.komik.slug}/${chapter.slug}") },
-                                        modifier = Modifier.padding(horizontal = 16.dp)
+                                    M3ChapterItem(
+                                        chapter = chapter,
+                                        onClick = { navController.navigate("read/${state.komik.slug}/${chapter.slug}") },
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                                     )
                                     if (index < state.chapters.size - 1) {
-                                        HorizontalDivider(color = MbkDivider, thickness = 1.dp)
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                            thickness = 0.5.dp
+                                        )
                                     }
                                 }
                             }
@@ -206,31 +274,29 @@ fun DetailScreen(
     }
 }
 
-// ─── PROFIL KOMIK ─────────────────────────────────────────────────────────────
+// ─── PROFIL KOMIK (MATERIAL 3) ────────────────────────────────────────────────
 @Composable
-private fun KomikProfileSection(komik: Komik) {
+private fun M3KomikProfileSection(komik: Komik) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(220.dp)
     ) {
-        // Background banner blur halus
         AsyncImage(
-            model              = komik.thumbnail,
+            model = komik.thumbnail,
             contentDescription = null,
-            contentScale       = ContentScale.Crop,
-            modifier           = Modifier.fillMaxSize()
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
         )
-        // Gradien transisi ke latar Light Mode
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            MbkBackground.copy(alpha = 0.5f),
-                            MbkBackground.copy(alpha = 0.95f),
-                            MbkBackground
+                            MaterialTheme.colorScheme.background.copy(alpha = 0.40f),
+                            MaterialTheme.colorScheme.background.copy(alpha = 0.92f),
+                            MaterialTheme.colorScheme.background
                         )
                     )
                 )
@@ -241,61 +307,80 @@ private fun KomikProfileSection(komik: Komik) {
                 .padding(16.dp),
             verticalAlignment = Alignment.Bottom
         ) {
-            // Thumbnail dengan border dan shadow
-            Card(
-                modifier = Modifier
-                    .size(width = 100.dp, height = 145.dp),
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.5.dp, Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ElevatedCard(
+                modifier = Modifier.size(width = 105.dp, height = 150.dp),
+                shape = MaterialTheme.shapes.medium,
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     AsyncImage(
-                        model              = komik.thumbnail,
+                        model = komik.thumbnail,
                         contentDescription = komik.title,
-                        contentScale       = ContentScale.Crop,
-                        modifier           = Modifier.fillMaxSize()
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
-                    // Badge status di atas thumbnail
-                    Box(
+                    Surface(
                         modifier = Modifier
                             .align(Alignment.TopStart)
-                            .padding(5.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(MbkOngoing)
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .padding(6.dp),
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = MaterialTheme.colorScheme.primary
                     ) {
-                        Text(komik.status, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = komik.status,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
                     }
                 }
             }
-            Spacer(Modifier.width(14.dp))
-            // Info Kanan
+
+            Spacer(Modifier.width(16.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    komik.title,
-                    color      = MbkTextPrimary,
+                    text = komik.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize   = 17.sp,
-                    maxLines   = 2,
-                    overflow   = TextOverflow.Ellipsis,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     lineHeight = 22.sp
                 )
                 Spacer(Modifier.height(4.dp))
-                Text("Penulis: ${komik.author}", color = MbkTextSecondary, fontSize = 12.sp, maxLines = 1)
+                Text(
+                    text = "Karya: ${komik.author}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
                 Spacer(Modifier.height(8.dp))
-                // Rating Row
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Star, null, tint = MbkRating, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(3.dp))
-                    Text("${komik.rating}", color = MbkTextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("  •  ${komik.totalReaders} pembaca", color = MbkTextSecondary, fontSize = 12.sp)
+                    Icon(
+                        Icons.Filled.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFF59E0B),
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "${komik.rating}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = " • ${komik.totalReaders} pembaca",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Spacer(Modifier.height(8.dp))
-                // Chips tipe dan total bab
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    InfoChip(komik.type)
-                    InfoChip("${komik.totalChapters} Bab")
+                    M3InfoChip(label = komik.type)
+                    M3InfoChip(label = "${komik.totalChapters} Bab")
                 }
             }
         }
@@ -303,73 +388,87 @@ private fun KomikProfileSection(komik: Komik) {
 }
 
 @Composable
-private fun InfoChip(text: String) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(MbkSurface)
-            .border(1.dp, MbkBorder, RoundedCornerShape(6.dp))
-            .padding(horizontal = 8.dp, vertical = 3.5.dp)
+private fun M3InfoChip(label: String) {
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Text(text, color = MbkTextPrimary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
     }
 }
 
-// ─── GENRE TAG ────────────────────────────────────────────────────────────────
+// ─── GENRE TAG ROW (MATERIAL 3) ───────────────────────────────────────────────
 @Composable
-private fun GenreTagRow(genres: List<String>, modifier: Modifier = Modifier) {
-    Row(
+private fun M3GenreTagRow(genres: List<String>, modifier: Modifier = Modifier) {
+    LazyRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        genres.take(4).forEach { genre ->
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MbkSurface)
-                    .border(1.dp, MbkBorder, RoundedCornerShape(20.dp))
-                    .padding(horizontal = 12.dp, vertical = 5.dp)
-            ) {
-                Text(genre, color = MbkTextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-            }
+        items(genres.take(6)) { genre ->
+            SuggestionChip(
+                onClick = {},
+                label = {
+                    Text(
+                        text = genre,
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                },
+                shape = RoundedCornerShape(8.dp),
+                colors = SuggestionChipDefaults.suggestionChipColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    labelColor = MaterialTheme.colorScheme.onSurface
+                ),
+                border = SuggestionChipDefaults.suggestionChipBorder(
+                    enabled = true,
+                    borderColor = MaterialTheme.colorScheme.outlineVariant
+                )
+            )
         }
     }
 }
 
-// ─── SINOPSIS CARD ─────────────────────────────────────────────────────────────
+// ─── SINOPSIS SECTION (MATERIAL 3) ────────────────────────────────────────────
 @Composable
-private fun SynopsisSection(synopsis: String, modifier: Modifier = Modifier) {
+private fun M3SynopsisSection(synopsis: String, modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
 
-    Card(
+    OutlinedCard(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MbkSurface),
-        border = BorderStroke(1.dp, MbkBorder),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text     = "Sinopsis",
-                color    = MbkTextPrimary,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
+                text = "Sinopsis",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                synopsis,
-                color    = MbkTextSecondary,
-                fontSize = 13.sp,
+                text = synopsis,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = if (expanded) Int.MAX_VALUE else 3,
                 overflow = if (expanded) TextOverflow.Visible else TextOverflow.Ellipsis,
                 lineHeight = 20.sp
             )
             Text(
-                text       = if (expanded) "Tutup Sinopsis" else "Baca Selengkapnya",
-                color      = MbkPrimary,
-                fontSize   = 12.sp,
+                text = if (expanded) "Tutup Sinopsis" else "Baca Selengkapnya",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
-                modifier   = Modifier
+                modifier = Modifier
                     .clickable { expanded = !expanded }
                     .padding(top = 8.dp)
             )
@@ -377,9 +476,9 @@ private fun SynopsisSection(synopsis: String, modifier: Modifier = Modifier) {
     }
 }
 
-// ─── CHAPTER LIST HEADER ──────────────────────────────────────────────────────
+// ─── CHAPTER LIST HEADER (MATERIAL 3) ─────────────────────────────────────────
 @Composable
-private fun ChapterListHeader(
+private fun M3ChapterListHeader(
     totalChapters: Int,
     isAsc: Boolean,
     onToggleSort: () -> Unit,
@@ -393,40 +492,45 @@ private fun ChapterListHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            "Daftar Chapter ($totalChapters)",
-            color      = MbkTextPrimary,
-            fontWeight = FontWeight.Bold,
-            fontSize   = 15.sp
+            text = "Daftar Chapter ($totalChapters)",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold
         )
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .clickable(onClick = onToggleSort)
-                .background(MbkSurface)
-                .border(1.dp, MbkBorder, RoundedCornerShape(8.dp))
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                if (isAsc) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward,
-                null,
-                tint     = MbkPrimary,
-                modifier = Modifier.size(14.dp)
+
+        AssistChip(
+            onClick = onToggleSort,
+            label = {
+                Text(
+                    text = if (isAsc) "Terlama" else "Terbaru",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = if (isAsc) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp)
+                )
+            },
+            shape = RoundedCornerShape(8.dp),
+            colors = AssistChipDefaults.assistChipColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                leadingIconContentColor = MaterialTheme.colorScheme.primary
+            ),
+            border = AssistChipDefaults.assistChipBorder(
+                enabled = true,
+                borderColor = MaterialTheme.colorScheme.outlineVariant
             )
-            Spacer(Modifier.width(4.dp))
-            Text(
-                if (isAsc) "Terlama" else "Terbaru",
-                color      = MbkPrimary,
-                fontSize   = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+        )
     }
 }
 
-// ─── CHAPTER ITEM ─────────────────────────────────────────────────────────────
+// ─── CHAPTER ITEM (MATERIAL 3) ────────────────────────────────────────────────
 @Composable
-private fun ChapterItem(
+private fun M3ChapterItem(
     chapter: Chapter,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -434,44 +538,46 @@ private fun ChapterItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
+            .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Bab ${chapter.chapterNumber}: ${chapter.title}",
-                    color      = MbkTextPrimary,
+                    text = "Bab ${chapter.chapterNumber}: ${chapter.title}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize   = 13.sp,
-                    maxLines   = 1,
-                    overflow   = TextOverflow.Ellipsis
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 if (chapter.isNew) {
-                    Spacer(Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(MbkNew)
-                            .padding(horizontal = 5.dp, vertical = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
                     ) {
-                        Text("Baru", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "Baru",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                        )
                     }
                 }
             }
-            Spacer(Modifier.height(3.dp))
+            Spacer(Modifier.height(2.dp))
             Text(
-                "${chapter.releaseDate}  •  ${chapter.totalPages} hlm.",
-                color    = MbkTextSecondary,
-                fontSize = 11.sp
+                text = "${chapter.releaseDate} • ${chapter.totalPages} hlm.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Icon(
-            Icons.Filled.ChevronRight,
-            null,
-            tint     = MbkTextHint,
-            modifier = Modifier.size(18.dp)
+            imageVector = Icons.Filled.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
         )
     }
 }

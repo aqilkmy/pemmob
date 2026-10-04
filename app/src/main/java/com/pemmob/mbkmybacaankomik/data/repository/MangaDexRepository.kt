@@ -14,6 +14,12 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.abs
 
+enum class MangaOrderType {
+    POPULAR,
+    LATEST,
+    RELEVANCE
+}
+
 /**
  * Repository untuk mengelola data MangaDex dan memetakan DTO ke model aplikasi (Komik, Chapter, ChapterDetail).
  */
@@ -55,11 +61,12 @@ class MangaDexRepository {
     }
 
     /**
-     * Mengambil daftar komik dengan filter genre atau kata kunci pencarian.
+     * Mengambil daftar komik dengan filter genre, kata kunci pencarian, atau jenis urutan (Populer / Terbaru).
      */
     suspend fun getMangaList(
         genre: String? = null,
         query: String? = null,
+        orderType: MangaOrderType = MangaOrderType.POPULAR,
         limit: Int = 20,
         offset: Int = 0
     ): Result<List<Komik>> = withContext(Dispatchers.IO) {
@@ -76,12 +83,24 @@ class MangaDexRepository {
                     orderRelevance = "desc"
                 )
             } else {
-                api.getMangaList(
-                    limit = limit,
-                    offset = offset,
-                    includedTags = includedTags,
-                    orderFollowedCount = "desc"
-                )
+                when (orderType) {
+                    MangaOrderType.LATEST -> {
+                        api.getMangaList(
+                            limit = limit,
+                            offset = offset,
+                            includedTags = includedTags,
+                            orderLatestChapter = "desc"
+                        )
+                    }
+                    MangaOrderType.POPULAR, MangaOrderType.RELEVANCE -> {
+                        api.getMangaList(
+                            limit = limit,
+                            offset = offset,
+                            includedTags = includedTags,
+                            orderFollowedCount = "desc"
+                        )
+                    }
+                }
             }
 
             val list = response.data.map { mapMangaDtoToKomik(it) }
