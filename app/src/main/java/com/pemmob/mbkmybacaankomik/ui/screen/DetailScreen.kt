@@ -69,22 +69,6 @@ fun DetailScreen(
                         )
                     }
                 },
-                actions = {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            Icons.Outlined.BookmarkBorder,
-                            contentDescription = "Bookmark",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    IconButton(onClick = { }) {
-                        Icon(
-                            Icons.Outlined.Share,
-                            contentDescription = "Bagikan",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
@@ -188,15 +172,6 @@ fun DetailScreen(
                         }
                     }
 
-                    // 3. Sinopsis Card (M3 OutlinedCard)
-                    item {
-                        M3SynopsisSection(
-                            synopsis = state.komik.synopsis,
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                        Spacer(Modifier.height(16.dp))
-                    }
-
                     // 4. Tombol Aksi Mulai Membaca (M3 Button)
                     item {
                         val firstChapterSlug = state.chapters.firstOrNull()?.slug ?: "bab-1"
@@ -277,36 +252,17 @@ fun DetailScreen(
 // ─── PROFIL KOMIK (MATERIAL 3) ────────────────────────────────────────────────
 @Composable
 private fun M3KomikProfileSection(komik: Komik) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(220.dp)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White
     ) {
-        AsyncImage(
-            model = komik.thumbnail,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.background.copy(alpha = 0.40f),
-                            MaterialTheme.colorScheme.background.copy(alpha = 0.92f),
-                            MaterialTheme.colorScheme.background
-                        )
-                    )
-                )
-        )
         Row(
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Poster Cover Komik Kecil di sebelah kiri
             ElevatedCard(
                 modifier = Modifier.size(width = 105.dp, height = 150.dp),
                 shape = MaterialTheme.shapes.medium,
@@ -339,11 +295,12 @@ private fun M3KomikProfileSection(komik: Komik) {
 
             Spacer(Modifier.width(16.dp))
 
+            // Informasi Komik (Judul, Penulis, Rating, dll.)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = komik.title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = Color.Black,
                     fontWeight = FontWeight.ExtraBold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -353,7 +310,7 @@ private fun M3KomikProfileSection(komik: Komik) {
                 Text(
                     text = "Karya: ${komik.author}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color.DarkGray,
                     maxLines = 1
                 )
                 Spacer(Modifier.height(8.dp))
@@ -369,12 +326,12 @@ private fun M3KomikProfileSection(komik: Komik) {
                         text = "${komik.rating}",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color.Black
                     )
                     Text(
                         text = " • ${komik.totalReaders} pembaca",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color.DarkGray
                     )
                 }
                 Spacer(Modifier.height(8.dp))
@@ -434,47 +391,6 @@ private fun M3GenreTagRow(genres: List<String>, modifier: Modifier = Modifier) {
     }
 }
 
-// ─── SINOPSIS SECTION (MATERIAL 3) ────────────────────────────────────────────
-@Composable
-private fun M3SynopsisSection(synopsis: String, modifier: Modifier = Modifier) {
-    var expanded by remember { mutableStateOf(false) }
-
-    OutlinedCard(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Sinopsis",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = synopsis,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = if (expanded) Int.MAX_VALUE else 3,
-                overflow = if (expanded) TextOverflow.Visible else TextOverflow.Ellipsis,
-                lineHeight = 20.sp
-            )
-            Text(
-                text = if (expanded) "Tutup Sinopsis" else "Baca Selengkapnya",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .clickable { expanded = !expanded }
-                    .padding(top = 8.dp)
-            )
-        }
-    }
-}
 
 // ─── CHAPTER LIST HEADER (MATERIAL 3) ─────────────────────────────────────────
 @Composable
