@@ -181,34 +181,14 @@ fun HomeScreen(
                         )
                     }
 
-                    // 2. Banner Utama (Hanya tampil di tab Beranda & tidak sedang mencari)
-                    if (state.currentTab == HomeTab.BERANDA && !isSearching) {
-                        item {
-                            M3FeaturedBanner(
-                                komik = state.featuredKomik,
-                                onKlik = { navController.navigate("detail/${state.featuredKomik.slug}") },
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                            Spacer(Modifier.height(18.dp))
-                        }
-                    }
-
-                    // 3. Filter Kategori (Material 3 FilterChip)
+                    // 3. Filter Genre
                     item {
-                        Text(
-                            text = "Filter Genre",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                        Spacer(Modifier.height(8.dp))
                         M3KategoriFilterRow(
                             items = kategoriList,
                             selectedGenre = state.selectedGenre,
                             onGenreSelected = { viewModel.onGenreSelected(it) }
                         )
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(8.dp))
                     }
 
                     // 4. Header Seksi Sesuai Tab / Status Pencarian
@@ -759,6 +739,7 @@ private fun M3KomikCard(
         }
     }
 }
+
 
 // ─── MATERIAL 3 EMPTY STATE ───────────────────────────────────────────────────
 @Composable

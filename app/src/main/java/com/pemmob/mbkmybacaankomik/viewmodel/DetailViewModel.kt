@@ -33,7 +33,7 @@ class DetailViewModel(
     /**
      * Memuat detail komik dan daftar chapter dari MangaDex REST API.
      */
-    fun loadDetail(komikSlug: String = "legenda-garuda-putih") {
+    fun loadDetail(komikSlug: String = "") {
         viewModelScope.launch {
             _uiState.value = DetailUiState.Loading
             try {

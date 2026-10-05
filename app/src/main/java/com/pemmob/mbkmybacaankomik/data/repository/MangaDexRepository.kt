@@ -51,12 +51,11 @@ class MangaDexRepository {
             if (firstManga != null) {
                 Result.success(mapMangaDtoToKomik(firstManga))
             } else {
-                Result.success(DummyDataSource.dummyFeaturedKomik)
+                Result.failure(Exception("Komik unggulan tidak ditemukan."))
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            // Fallback ke data dummy jika ada kendala koneksi
-            Result.success(DummyDataSource.dummyFeaturedKomik)
+            Result.failure(e)
         }
     }
 
@@ -104,17 +103,10 @@ class MangaDexRepository {
             }
 
             val list = response.data.map { mapMangaDtoToKomik(it) }
-            if (list.isNotEmpty()) {
-                Result.success(list)
-            } else if (!query.isNullOrBlank()) {
-                Result.success(emptyList())
-            } else {
-                Result.success(DummyDataSource.dummyKomikList)
-            }
+            Result.success(list)
         } catch (e: Exception) {
             e.printStackTrace()
-            // Fallback ke data dummy jika offline
-            Result.success(DummyDataSource.dummyKomikList)
+            Result.failure(e)
         }
     }
 
@@ -126,13 +118,9 @@ class MangaDexRepository {
             // 1. Ambil detail manga
             val detailResponse = api.getMangaDetail(mangaId)
             val mangaDto = detailResponse.data
+                ?: return@withContext Result.failure(Exception("Detail komik tidak ditemukan."))
 
-            val komik = if (mangaDto != null) {
-                mapMangaDtoToKomik(mangaDto)
-            } else {
-                DummyDataSource.dummyKomikList.find { it.slug == mangaId || it.id == mangaId }
-                    ?: DummyDataSource.dummyFeaturedKomik
-            }
+            val komik = mapMangaDtoToKomik(mangaDto)
 
             // 2. Ambil daftar chapter dari feed
             // Coba ambil chapter bahasa Indonesia dan Inggris yang tidak memiliki externalUrl (bisa dibaca langsung)
@@ -168,14 +156,10 @@ class MangaDexRepository {
                 ?.map { mapChapterDtoToChapter(it) }
                 ?: emptyList()
 
-            val finalChapters = if (chapters.isNotEmpty()) chapters else DummyDataSource.dummyChapterList
-
-            Result.success(Pair(komik.copy(totalChapters = finalChapters.size), finalChapters))
+            Result.success(Pair(komik.copy(totalChapters = chapters.size), chapters))
         } catch (e: Exception) {
             e.printStackTrace()
-            val fallbackKomik = DummyDataSource.dummyKomikList.find { it.slug == mangaId || it.id == mangaId }
-                ?: DummyDataSource.dummyFeaturedKomik
-            Result.success(Pair(fallbackKomik, DummyDataSource.dummyChapterList))
+            Result.failure(e)
         }
     }
 
@@ -210,9 +194,13 @@ class MangaDexRepository {
                 emptyList()
             }
 
+            if (pageUrls.isEmpty()) {
+                return@withContext Result.failure(Exception("Halaman gambar chapter tidak ditemukan."))
+            }
+
             // Ambil info manga dan daftar chapter untuk navigasi prev/next
             val (_, allChapters) = getMangaDetail(mangaId).getOrDefault(
-                Pair(DummyDataSource.dummyFeaturedKomik, DummyDataSource.dummyChapterList)
+                Pair(Komik(), emptyList())
             )
 
             val currentIndex = allChapters.indexOfFirst { it.slug == chapterId || it.id == chapterId }
@@ -228,7 +216,7 @@ class MangaDexRepository {
                 chapterSlug = chapterId,
                 chapterTitle = currentChapter?.title ?: "Bab ${currentChapter?.chapterNumber ?: "1"}",
                 chapterNumber = currentChapter?.chapterNumber ?: "1",
-                pages = if (pageUrls.isNotEmpty()) pageUrls else DummyDataSource.getChapterDetail(mangaId, chapterId).pages,
+                pages = pageUrls,
                 prevChapterSlug = prevSlug,
                 nextChapterSlug = nextSlug
             )
@@ -236,8 +224,7 @@ class MangaDexRepository {
             Result.success(chapterDetail)
         } catch (e: Exception) {
             e.printStackTrace()
-            // Fallback ke dummy chapter detail jika offline
-            Result.success(DummyDataSource.getChapterDetail(mangaId, chapterId))
+            Result.failure(e)
         }
     }
 
@@ -265,7 +252,7 @@ class MangaDexRepository {
         val coverUrl = if (!coverFileName.isNullOrBlank()) {
             "https://uploads.mangadex.org/covers/${dto.id}/$coverFileName.512.jpg"
         } else {
-            "https://picsum.photos/seed/${dto.id}/400/600"
+            ""
         }
 
         // Tipe komik berdasarkan originalLanguage
